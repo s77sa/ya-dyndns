@@ -7,6 +7,7 @@ import sys
 import json
 import datetime
 from requests.auth import AuthBase
+from collections import defaultdict
 # from urllib.parse import urlencode
 
 
@@ -26,17 +27,14 @@ YandexPddToken = None
 # YandexPddAdressList = "https://pddimp.yandex.ru/api2/admin/dns/list"
 # YandexPddAdressEdit = "https://pddimp.yandex.ru/api2/admin/dns/edit"
 # YandexPddToken = "WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA"
-
-
 ##########################################################
 
 ################# Do not edis this variables #############
 EXTERNAL_CHECKIP_SITE = "http://api.ipify.org?format=json"
-
-LOG_MESSTYPE_ERR = "ERROR"
-LOG_MESSTYPE_WARN = "WARRNING"
-LOG_MESSTYPE_INFO = "INFO"
-
+# LOG_MESSTYPE_ERR = "ERROR"
+# LOG_MESSTYPE_WARN = "WARRNING"
+# LOG_MESSTYPE_INFO = "INFO"
+MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'INFO'})
 ##########################################################
 # https://connect.yandex.ru/portal/services/webmaster/resources/
 
@@ -76,7 +74,7 @@ def ReadJsonConfig(Config):
         return None
 
 def ReadParametersFromConfig(PathToConfig):
-    WriteLog("Load config: " + PathToConfig, LOG_MESSTYPE_INFO)
+    WriteLog("Load config: " + PathToConfig, MESSTYPE['inf'])
     if (os.path.exists(PathToConfig)):
         j = ReadJsonConfig(PathToConfig)
         YandexFqdnMainDomain = j.get("YandexFqdnMainDomain")
@@ -86,16 +84,16 @@ def ReadParametersFromConfig(PathToConfig):
         YandexPddAdressEdit = j.get("YandexPddAdressEdit")
         YandexPddToken = j.get("YandexPddToken")
     else:
-        WriteLog("Config not exists from path: " + PathToConfig, LOG_MESSTYPE_ERR)
+        WriteLog("Config not exists from path: " + PathToConfig, MESSTYPE['err'])
 
 def OpenConfigFile(PathToLog):
     if (os.path.exists(str(PathToLog))):
-        WriteLog("Entered log file: " + str(PathToLog), LOG_MESSTYPE_INFO)
+        WriteLog("Entered log file: " + str(PathToLog), MESSTYPE['inf'])
         ReadParametersFromConfig(PathToLog)
     else:
         WriteLog("Error working whith log file: " + PathToLog)
 
-WriteLog("============== Init ==============")
+WriteLog("============== Init ==============", MESSTYPE['inf'])
 
 if (len(sys.argv[1:]) > 0):
     Config_File = (sys.argv[1:])
@@ -104,13 +102,14 @@ else:
     if(Config_File != None):
         OpenConfigFile(Config_File)
     else:
-        if (YandexFqdnMainDomain == None or
-            YandexFqdnSubDomain == None or
-            SubDomainTtl == None or
-            YandexPddAdressList == None or
-            YandexPddAdressEdit == None or
-            YandexPddToken== None):
-                WriteLog("One or any input paramters not setted", LOG_MESSTYPE_ERR)
+        # if (YandexFqdnMainDomain == None or
+        #     YandexFqdnSubDomain == None or
+        #     SubDomainTtl == None or
+        #     YandexPddAdressList == None or
+        #     YandexPddAdressEdit == None or
+        #     YandexPddToken== None):
+        if (None in (YandexFqdnMainDomain, YandexFqdnSubDomain, SubDomainTtl, YandexPddAdressList, YandexPddAdressEdit, YandexPddToken)):
+                WriteLog("One or any input paramters not setted", MESSTYPE['err'])
                 sys.exit(1)
 
 
@@ -161,7 +160,7 @@ def GetExternalIP(url):
          WriteLog("IP from external site: " + ip_str)
          return(ip_str)
      else:
-        WriteLog("Error request from: "+ response.url, LOG_MESSTYPE_ERR)
+        WriteLog("Error request from: "+ response.url, MESSTYPE['err'])
         return None
 
 
@@ -251,7 +250,7 @@ def AddIPToSubDomain(url, token, domain, subdomain, subdomainid, ip, ttl):
 # else:
 #     WriteLog("Error getting external IP")
 
-WriteLog("=============== End ===============", LOG_MESSTYPE_INFO)
+WriteLog("=============== End ===============", MESSTYPE['inf'])
 # o = GetYandexDnsList(YandexPddAdressList, YandexFqdnMainDomain, YandexPddToken)
 # #print(o)
 # if (o != None):
