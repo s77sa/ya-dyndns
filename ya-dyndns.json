@@ -1,0 +1,9 @@
+{
+    "ExternalIPSite": "http://api.ipify.org?format=json",
+    "YandexFqdnMainDomain": "s77sa.ru",
+    "YandexFqdnSubDomain": "big-nas.s77sa.ru",
+    "SubDomainTtl": 1800,
+    "YandexPddAdressList": "https://pddimp.yandex.ru/api2/admin/dns/list",
+    "YandexPddAdressEdit": "https://pddimp.yandex.ru/api2/admin/dns/edit",
+    "YandexPddToken": "WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA"
+}

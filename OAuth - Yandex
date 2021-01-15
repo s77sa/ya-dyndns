@@ -1,0 +1,32 @@
+https://oauth.yandex.ru/client/c7326b64c3464d20a7cf72d172b5431e
+
+
+ID: c7326b64c3464d20a7cf72d172b5431e
+Пароль: ef3ce4a2f6f94781bd9c163c2459544d
+Callback URL: http://ya.ru
+Время жизни токена: Не менее, чем 1 год
+Дата создания: 7/17/2020
+
+
+
+WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA
+
+
+https://pddimp.yandex.ru/nsapi/get_domain_records.xml?token=WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA&domain=s77sa.ru
+
+
+curl -H 'PddToken: WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA' -H 'Authorization: OAuth ef3ce4a2f6f94781bd9c163c2459544d' 'https://pddimp.yandex.ru/api2/admin/dns/list?domain=s77sa.ru'
+
+curl -H 'PddToken: WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA' 'https://pddimp.yandex.ru/api2/admin/dns/list?domain=s77sa.ru'
+
+
+
+curl -H 'PddToken: 123456789ABCDEF0000000000000000000000000000000000000' -d 'domain=domain.ru&record_id=1&subdomain=www&ttl=14400&content=127.0.0.1' 'https://pddimp.yandex.ru/api2/admin/dns/edit'
+
+curl -H 'PddToken: WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA' -d 'domain=s77sa.ru&record_id=30317855&subdomain=www&ttl=14400&content=127.0.0.151' 'https://pddimp.yandex.ru/api2/admin/dns/edit'
+
+{"domain": "s77sa.ru", "records": [{"priority": "", "ttl": 21600, "domain": "s77sa.ru", "type": "TXT", "content": "v=DKIM1; k=rsa; t=s; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9SuKOp6h+v3i1gFQew0/9mCLlxQWllMB7kaAitdfBJUTFlSkzVe/GunK20uqBFW6+kG968gPBG6ve8JIZ8aFFFVOmYdQTbHdJmGXJbVbTM/tgwvEd6UNKkKtZQ0AhNk4nMbd0kUHhzxnn3URdFoC3/rmfBXzx8v9dO6rPrDRFMwIDAQAB", "record_id": 15816267, "fqdn": "mail._domainkey.s77sa.ru", "subdomain": "mail._domainkey"}, {"priority": "", "ttl": 21600, "domain": "s77sa.ru", "type": "TXT", "content": "v=spf1 redirect=_spf.yandex.net", "record_id": 15816265, "fqdn": "s77sa.ru", "subdomain": "@"}, {"priority": 10, "ttl": 21600, "domain": "s77sa.ru", "type": "MX", "content": "mx.yandex.net.", "record_id": 15816272, "fqdn": "s77sa.ru", "subdomain": "@"}, {"priority": "", "ttl": 21600, "domain": "s77sa.ru", "type": "A", "content": "127.0.0.1", "record_id": 15816270, "fqdn": "www.s77sa.ru", "subdomain": "www"}, {"priority": "", "ttl": 21600, "domain": "s77sa.ru", "type": "A", "content": "127.0.0.1", "record_id": 15816275, "fqdn": "s77sa.ru", "subdomain": "@"}, {"target": "domain-xmpp.yandex.net.", "priority": 20, "ttl": 21600, "domain": "s77sa.ru", "weight": 0, "type": "SRV", "record_id": 15816286, "port": 5269, "fqdn": "_xmpp-server._tcp.s77sa.ru", "subdomain": "_xmpp-server._tcp"}, {"target": "domain-xmpp.yandex.net.", "priority": 20, "ttl": 21600, "domain": "s77sa.ru", "weight": 0, "type": "SRV", "record_id": 15816291, "port": 5269, "fqdn": "_xmpp-server._tcp.conference.s77sa.ru", "subdomain": "_xmpp-server._tcp.conference"}, {"priority": "", "ttl": 21600, "domain": "s77sa.ru", "type": "CNAME", "content": "domain.mail.yandex.net.", "record_id": 15816260, "fqdn": "mail.s77sa.ru", "subdomain": "mail"}, {"target": "domain-xmpp.yandex.net.", "priority": 20, "ttl": 21600, "domain": "s77sa.ru", "weight": 0, "type": "SRV", "record_id": 15816281, "port": 5222, "fqdn": "_xmpp-client._tcp.s77sa.ru", "subdomain": "_xmpp-client._tcp"}, {"target": "domain-xmpp.yandex.net.", "priority": 20, "ttl": 21600, "domain": "s77sa.ru", "weight": 0, "type": "SRV", "record_id": 15816279, "port": 5222, "fqdn": "_xmpp-client._tcp.conference.s77sa.ru", "subdomain": "_xmpp-client._tcp.conference"}, {"priority": "", "ttl": 1800, "domain": "s77sa.ru", "type": "A", "content": "127.0.0.1", "record_id": 30317855, "fqdn": "pi-nas.s77sa.ru", "subdomain": "pi-nas"}, {"priority": "", "ttl": 1800, "domain": "s77sa.ru", "type": "A", "content": "95.72.240.144", "record_id": 23898785, "fqdn": "big-nas.s77sa.ru", "subdomain": "big-nas"}], "success": "ok"}
+
+
+
+curl 'https://api.ipify.org?format=txt'
