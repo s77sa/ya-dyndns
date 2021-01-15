@@ -1,14 +1,25 @@
 #!/home/seven/Projects/py-venv/bin/python3
 # import pycurl
 import io
+import os
 import requests
-# import sys
+import sys
 import json
 import datetime
+from requests.auth import AuthBase
 # from urllib.parse import urlencode
 
-ExternalIPSite = "http://api.ipify.org?format=json"
 
+################# Editable variables #####################
+Log_Path = "/home/seven/Projects/ya-dyndns/dyn-test.log"
+#Config_File = None
+Config_File = "/home/seven/Projects/ya-dyndns/ya-dyndns.json"
+YandexFqdnMainDomain = None
+YandexFqdnSubDomain = None
+SubDomainTtl = None
+YandexPddAdressList = None
+YandexPddAdressEdit = None
+YandexPddToken = None
 # YandexFqdnMainDomain = "s77sa.ru"
 # YandexFqdnSubDomain = "big-nas.s77sa.ru"
 # SubDomainTtl = 1800
@@ -16,52 +27,36 @@ ExternalIPSite = "http://api.ipify.org?format=json"
 # YandexPddAdressEdit = "https://pddimp.yandex.ru/api2/admin/dns/edit"
 # YandexPddToken = "WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA"
 
-Log = "/home/seven/Projects/ya-dyndns/dyn-test.log"
+
+##########################################################
+
+################# Do not edis this variables #############
+EXTERNAL_CHECKIP_SITE = "http://api.ipify.org?format=json"
+
+LOG_MESSTYPE_ERR = "ERROR"
+LOG_MESSTYPE_WARN = "WARRNING"
+LOG_MESSTYPE_INFO = "INFO"
+
+##########################################################
+# https://connect.yandex.ru/portal/services/webmaster/resources/
+
+# curl -H 'PddToken: 123456789ABCDEF0000000000000000000000000000000000000' 
+# -d 'domain=domain.com&record_id=1&subdomain=www&ttl=14400&content=127.0.0.1' 
+# 'https://pddimp.yandex.ru/api2/admin/dns/edit'
 
 
-class YaDynDns():
-    # def ReadJsonConfig(self, Config):
-    #     if(exis
-    #     file = open(Config, "r")
-    #     j = json.load(file)
-    #     file.close()
-    #     # print(j)
-    #     return j
-
-    def __init__(self, PathToConfig):
-        print("init")
-        j = self.ReadJsonConfig(PathToConfig)
-        self.YandexFqdnMainDomain = j.get("YandexFqdnMainDomain")
-        self.YandexFqdnSubDomain = j.get("YandexFqdnSubDomain")
-        self.SubDomainTtl = j.get("SubDomainTtl")
-        self.YandexPddAdressList = j.get("YandexPddAdressList")
-        self.YandexPddAdressEdit = j.get("YandexPddAdressEdit")
-        self.YandexPddToken = j.get("YandexPddToken")
-        
+def WriteLog (Text, Log_MessType):
+    try:
+        file = open(Log_Path, "a")
+        line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
+        file.write(line + "\n")
+        file.close()
+        return True
+    except Exception as e:
+        print("Error writing to log.\n" + str(e))
+        sys.exit(1)
 
 
-
-ya = YaDynDns("/home/seven/Projects/ya-dyndns/ya-dyndns.json")
-
-def WriteLog (Text):
-    file = open(Log, "a")
-    line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Text
-    print(line)
-    file.write(line + "\n")
-    file.close()
-    return True
-
-def GetExternalIP(url):
-     response = requests.get(url)
-     if(response.status_code == 200):
-        #  print(response.content.decode("UTF-8"))
-         j = json.loads(response.content.decode("UTF-8"))
-         return(j.get("ip"))
-     else:
-        # print("Error request from: "+ response.url)
-        return None
-
-from requests.auth import AuthBase
 class TokenAuth(AuthBase):
     def __init__(self, token):
         self.token = token
@@ -69,6 +64,107 @@ class TokenAuth(AuthBase):
     def __call__(self, r):
         r.headers["PddToken"] = f"{self.token}" 
         return r
+
+def ReadJsonConfig(Config):
+    if (os.path.exists(Config)):
+        file = open(Config, "r")
+        j = json.load(file)
+        file.close()
+        # print(j)
+        return j
+    else:
+        return None
+
+def ReadParametersFromConfig(PathToConfig):
+    WriteLog("Load config: " + PathToConfig, LOG_MESSTYPE_INFO)
+    if (os.path.exists(PathToConfig)):
+        j = ReadJsonConfig(PathToConfig)
+        YandexFqdnMainDomain = j.get("YandexFqdnMainDomain")
+        YandexFqdnSubDomain = j.get("YandexFqdnSubDomain")
+        SubDomainTtl = j.get("SubDomainTtl")
+        YandexPddAdressList = j.get("YandexPddAdressList")
+        YandexPddAdressEdit = j.get("YandexPddAdressEdit")
+        YandexPddToken = j.get("YandexPddToken")
+    else:
+        WriteLog("Config not exists from path: " + PathToConfig, LOG_MESSTYPE_ERR)
+
+def OpenConfigFile(PathToLog):
+    if (os.path.exists(str(PathToLog))):
+        WriteLog("Entered log file: " + str(PathToLog), LOG_MESSTYPE_INFO)
+        ReadParametersFromConfig(PathToLog)
+    else:
+        WriteLog("Error working whith log file: " + PathToLog)
+
+WriteLog("============== Init ==============")
+
+if (len(sys.argv[1:]) > 0):
+    Config_File = (sys.argv[1:])
+    OpenConfigFile(Config_File)
+else:
+    if(Config_File != None):
+        OpenConfigFile(Config_File)
+    else:
+        if (YandexFqdnMainDomain == None or
+            YandexFqdnSubDomain == None or
+            SubDomainTtl == None or
+            YandexPddAdressList == None or
+            YandexPddAdressEdit == None or
+            YandexPddToken== None):
+                WriteLog("One or any input paramters not setted", LOG_MESSTYPE_ERR)
+                sys.exit(1)
+
+
+
+
+
+# class YaDynDns():
+#     def ReadJsonConfig(self, Config):
+#         if (os.path.exists(Config)):
+#             file = open(Config, "r")
+#             j = json.load(file)
+#             file.close()
+#             # print(j)
+#             return j
+#         else:
+#             return None
+
+#     def __init__(self, PathToConfig):
+#         print("Init class YaDynDns")
+#         print(PathToConfig)
+#         if (os.path.exists(PathToConfig)):
+#             j = self.ReadJsonConfig(PathToConfig)
+#             self.YandexFqdnMainDomain = j.get("YandexFqdnMainDomain")
+#             self.YandexFqdnSubDomain = j.get("YandexFqdnSubDomain")
+#             self.SubDomainTtl = j.get("SubDomainTtl")
+#             self.YandexPddAdressList = j.get("YandexPddAdressList")
+#             self.YandexPddAdressEdit = j.get("YandexPddAdressEdit")
+#             self.YandexPddToken = j.get("YandexPddToken")
+#         else:
+#             WriteLog("Config not exists from path: " + PathToConfig, LOG_MESSTYPE_ERR)
+        
+        
+
+
+
+
+
+# ya = YaDynDns("/home/seven/Projects/ya-dyndns/ya-dyndns.json")
+
+
+
+def GetExternalIP(url):
+     response = requests.get(url)
+     if(response.status_code == 200):
+        #  print(response.content.decode("UTF-8"))
+         j = json.loads(response.content.decode("UTF-8"))
+         ip_str = j.get("ip")
+         WriteLog("IP from external site: " + ip_str)
+         return(ip_str)
+     else:
+        WriteLog("Error request from: "+ response.url, LOG_MESSTYPE_ERR)
+        return None
+
+
 
 # Get All information from Yandex DNS Information
 def GetYandexDnsList(url, domain, token):
@@ -98,9 +194,7 @@ def GetIPSubDomain(jsoncontent, subdomain):
     else:
         return None
 
-# curl -H 'PddToken: 123456789ABCDEF0000000000000000000000000000000000000' 
-# -d 'domain=domain.com&record_id=1&subdomain=www&ttl=14400&content=127.0.0.1' 
-# 'https://pddimp.yandex.ru/api2/admin/dns/edit'
+
 
 def AddIPToSubDomain(url, token, domain, subdomain, subdomainid, ip, ttl):
     status = 0
@@ -122,8 +216,12 @@ def AddIPToSubDomain(url, token, domain, subdomain, subdomainid, ip, ttl):
         return response
         
 
-# WriteLog("============== Init ==============")
-# externalip = (GetExternalIP(ExternalIPSite))
+
+
+
+
+
+# externalip = (GetExternalIP(EXTERNAL_CHECKIP_SITE))
 # if (externalip != None):
 #     WriteLog("External IP = " + externalip)
 #     subdomaininfo = GetIPSubDomain(GetYandexDnsList(
@@ -153,7 +251,7 @@ def AddIPToSubDomain(url, token, domain, subdomain, subdomainid, ip, ttl):
 # else:
 #     WriteLog("Error getting external IP")
 
-WriteLog("=============== End ===============")
+WriteLog("=============== End ===============", LOG_MESSTYPE_INFO)
 # o = GetYandexDnsList(YandexPddAdressList, YandexFqdnMainDomain, YandexPddToken)
 # #print(o)
 # if (o != None):
