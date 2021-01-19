@@ -11,32 +11,36 @@ from collections import defaultdict
 # from urllib.parse import urlencode
 
 
-################# Editable variables #####################
-Log_Path = "/home/seven/Projects/ya-dyndns/dyn-test.log"
-#Config_File = None
-Config_File = "/home/seven/Projects/ya-dyndns/ya-dyndns.json"
-YandexFqdnMainDomain = None
-YandexFqdnSubDomain = None
-SubDomainTtl = None
-YandexPddAdressList = None
-YandexPddAdressEdit = None
-YandexPddToken = None
-# YandexFqdnMainDomain = "s77sa.ru"
-# YandexFqdnSubDomain = "big-nas.s77sa.ru"
-# SubDomainTtl = 1800
-# YandexPddAdressList = "https://pddimp.yandex.ru/api2/admin/dns/list"
-# YandexPddAdressEdit = "https://pddimp.yandex.ru/api2/admin/dns/edit"
-# YandexPddToken = "WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA"
-##########################################################
-
 ################# Do not edis this variables #############
 EXTERNAL_CHECKIP_SITE = "http://api.ipify.org?format=json"
+ALL_PARAM_DICT = {'url_list':'','url_edit':'', 'token':'', 'domain':'', 'subdomain':'', 'subdomainid':'', 'ip':'', 'ttl':''}
 # LOG_MESSTYPE_ERR = "ERROR"
 # LOG_MESSTYPE_WARN = "WARRNING"
 # LOG_MESSTYPE_INFO = "INFO"
 MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'INFO'})
 ##########################################################
+
+################# Editable variables #####################
+Log_Path = "/home/seven/Projects/ya-dyndns/dyn-test.log"
+#Config_File = None
+Config_File = "/home/seven/Projects/ya-dyndns/ya-dyndns.json"
+ALL_PARAM_DICT['domain'] = None # FQDN main domain
+ALL_PARAM_DICT['subdomain'] = None # FQDN sub domain
+ALL_PARAM_DICT['ttl'] = None # TTL for sub domain
+ALL_PARAM_DICT['url_list'] = None # Yandex Pdd Url for list
+ALL_PARAM_DICT['url_edit'] = None # Yandex Pdd Url for edit
+ALL_PARAM_DICT['token'] = None # Yandex Pdd Token
+
+# ALL_PARAM_DICT['domain'] = "s77sa.ru" # FQDN main domain
+# ALL_PARAM_DICT['subdomain'] = "big-nas.s77sa.ru" # FQDN sub domain
+# ALL_PARAM_DICT['ttl'] = 1800 # TTL for sub domain
+# ALL_PARAM_DICT['url_list'] = "https://pddimp.yandex.ru/api2/admin/dns/list" # Yandex Pdd Url for list
+# ALL_PARAM_DICT['url_edit'] = "https://pddimp.yandex.ru/api2/admin/dns/edit" # Yandex Pdd Url for edit
+# ALL_PARAM_DICT['token'] = "WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA" # Yandex Pdd Token
+##########################################################
+
 # https://connect.yandex.ru/portal/services/webmaster/resources/
+# https://yandex.ru/dev/connect/directory/api/about.html
 
 # curl -H 'PddToken: 123456789ABCDEF0000000000000000000000000000000000000' 
 # -d 'domain=domain.com&record_id=1&subdomain=www&ttl=14400&content=127.0.0.1' 
@@ -77,12 +81,12 @@ def ReadParametersFromConfig(PathToConfig):
     WriteLog("Load config: " + PathToConfig, MESSTYPE['inf'])
     if (os.path.exists(PathToConfig)):
         j = ReadJsonConfig(PathToConfig)
-        YandexFqdnMainDomain = j.get("YandexFqdnMainDomain")
-        YandexFqdnSubDomain = j.get("YandexFqdnSubDomain")
-        SubDomainTtl = j.get("SubDomainTtl")
-        YandexPddAdressList = j.get("YandexPddAdressList")
-        YandexPddAdressEdit = j.get("YandexPddAdressEdit")
-        YandexPddToken = j.get("YandexPddToken")
+        ALL_PARAM_DICT['domain'] = j.get("YandexFqdnMainDomain") # FQDN main domain
+        ALL_PARAM_DICT['subdomain'] = j.get("YandexFqdnSubDomain") # FQDN sub domain
+        ALL_PARAM_DICT['ttl'] = j.get("SubDomainTtl") # TTL for sub domain
+        ALL_PARAM_DICT['url_list'] = j.get("YandexPddAdressList") # Yandex Pdd Url for list
+        ALL_PARAM_DICT['url_edit'] = j.get("YandexPddAdressEdit") # Yandex Pdd Url for edit
+        ALL_PARAM_DICT['token'] = j.get("YandexPddToken") # Yandex Pdd Token
     else:
         WriteLog("Config not exists from path: " + PathToConfig, MESSTYPE['err'])
 
@@ -108,7 +112,7 @@ else:
         #     YandexPddAdressList == None or
         #     YandexPddAdressEdit == None or
         #     YandexPddToken== None):
-        if (None in (YandexFqdnMainDomain, YandexFqdnSubDomain, SubDomainTtl, YandexPddAdressList, YandexPddAdressEdit, YandexPddToken)):
+        if (None in (ALL_PARAM_DICT['domain'], ALL_PARAM_DICT['subdomain'],  ALL_PARAM_DICT['ttl'], ALL_PARAM_DICT['url_list'], ALL_PARAM_DICT['url_edit'], ALL_PARAM_DICT['token'])):
                 WriteLog("One or any input paramters not setted", MESSTYPE['err'])
                 sys.exit(1)
 
@@ -216,7 +220,25 @@ def AddIPToSubDomain(url, token, domain, subdomain, subdomainid, ip, ttl):
         
 
 
-
+def AddDNSRecord(url, token, domain, subdomain, subdomainid, ip, ttl):
+    status = 0
+    print 
+    # response = requests.post(
+    #     url,
+    #     auth=TokenAuth(token),
+    #     params={
+    #         "domain": domain,
+    #         "record_id": subdomainid,
+    #         #"subdomain":subdomain,
+    #         "content":ip,
+    #         "ttl":ttl}
+    # )
+    # if (response.status_code == 200):
+    #     j = json.loads(response.content.decode("UTF-8"))
+    #     if (j.get("success") == "ok"):
+    #         return j
+    # else:
+    #     return response
 
 
 
