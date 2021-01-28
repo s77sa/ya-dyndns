@@ -1,0 +1,10 @@
+{
+    "ExternalIPSite": "http://api.ipify.org?format=json",
+    "YandexFqdnMainDomain": "",
+    "YandexFqdnSubDomain": "",
+    "SubDomainTtl": 1800,
+    "YandexPddAdressList": "https://pddimp.yandex.ru/api2/admin/dns/list",
+    "YandexPddAdressEdit": "https://pddimp.yandex.ru/api2/admin/dns/edit",
+    "YandexPddAdressAdd": "https://pddimp.yandex.ru/api2/admin/dns/add",
+    "YandexPddToken": "WQCC72J6TNLIJJNZ5PMA63Z6G7D3WYBXAH62ZBUY7NMFPWOSXTUA"
+}
