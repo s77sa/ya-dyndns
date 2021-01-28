@@ -19,9 +19,11 @@ MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'I
 ##########################################################
 
 ################# Editable variables #####################
-Log_Path = "/home/seven/Projects/dyn-test.log"
+Log_Path = "./dyn-test.log"
+Log_To_File = True # True or False
+Log_To_Stdout = False # True or False
 #Config_File = None
-Config_File = "/home/seven/Projects/ya-dyndns.json"
+Config_File = "./ya-dyndns.json"
 ExternalIP = None
 ALL_PARAM_DICT['domain'] = None # FQDN main domain
 ALL_PARAM_DICT['subdomain'] = None # FQDN sub domain
@@ -46,15 +48,19 @@ ALL_PARAM_DICT['token'] = None # Yandex Pdd Token
 
 
 def WriteLog (Text, Log_MessType):
-    try:
-        file = open(Log_Path, "a")
-        line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
-        file.write(line + "\n")
-        file.close()
-        return True
-    except Exception as e:
-        print("Error writing to log.\n" + str(e))
-        sys.exit(1)
+    line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
+    if (Log_To_Stdout):
+        print(line)
+
+    if ( Log_To_File ):
+        try:
+            file = open(Log_Path, "a")
+            file.write(line + "\n")
+            file.close()
+            return True
+        except Exception as e:
+            print("Error writing to log.\n" + str(e))
+            sys.exit(1)
 
 
 class TokenAuth(AuthBase):
