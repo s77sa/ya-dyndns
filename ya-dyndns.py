@@ -7,14 +7,12 @@ import json
 import datetime
 from requests.auth import AuthBase
 from collections import defaultdict
+import tarfile
 
 
 ################# Do not edis this variables #############
 EXTERNAL_CHECKIP_SITE = "http://api.ipify.org?format=json"
 ALL_PARAM_DICT = {'url_list':'','url_edit':'', 'token':'', 'domain':'', 'subdomain':'', 'subdomainid':'', 'ip':'', 'ttl':''}
-# LOG_MESSTYPE_ERR = "ERROR"
-# LOG_MESSTYPE_WARN = "WARRNING"
-# LOG_MESSTYPE_INFO = "INFO"
 MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'INFO'})
 ##########################################################
 
@@ -22,6 +20,7 @@ MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'I
 Log_Path = "./dyn-test.log"
 Log_To_File = True # True or False
 Log_To_Stdout = False # True or False
+Log_Max_Size = 5242880 # Bytes 
 #Config_File = None
 Config_File = "./ya-dyndns.json"
 ExternalIP = None
@@ -47,6 +46,27 @@ ALL_PARAM_DICT['token'] = None # Yandex Pdd Token
 # https://yandex.ru/dev/connect/directory/api/about.html
 
 
+def LogRotate(PathToLog):
+    if (os.path.getsize(PathToLog) > Log_Max_Size):
+        if (os.path.exists(PathToLog)):
+            gz_count = 0
+            print(os.path.getsize(PathToLog))
+            print(os.path.dirname(PathToLog))
+            dir_name = (os.listdir(os.path.dirname(PathToLog)))
+            for file_name in dir_name:
+                if (file_name.find("gz",0,len(file_name))) > 0:
+                    print(file_name)
+                    curr_count = int(file_name.rpartition('log.')[2].partition('.gz')[0])
+                    if curr_count > gz_count:
+                        gz_count = curr_count
+                    # print(file_name.rpartition('.gz')[0])
+            tar = tarfile.open(PathToLog+"."+str(gz_count + 1)+".gz", "w:gz")
+            tar.add(PathToLog)
+            tar.close()
+            # Delete current log file
+            os.remove(PathToLog)
+
+
 def WriteLog (Text, Log_MessType):
     line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
     if (Log_To_Stdout):
@@ -57,11 +77,11 @@ def WriteLog (Text, Log_MessType):
             file = open(Log_Path, "a")
             file.write(line + "\n")
             file.close()
+            LogRotate(Log_Path) # Log rotate 
             return True
         except Exception as e:
             print("Error writing to log.\n" + str(e))
-            sys.exit(1)
-
+            sys.exit(-1)
 
 class TokenAuth(AuthBase):
     def __init__(self, token):
