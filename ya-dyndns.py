@@ -1,4 +1,4 @@
-#!/home/seven/Projects/py-venv/bin/python3
+#!/usr/bin/python3
 import io
 import os
 import requests
@@ -19,8 +19,9 @@ MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'I
 ################# Editable variables #####################
 Log_Path = "./dyn-test.log"
 Log_To_File = True # True or False
-Log_To_Stdout = False # True or False
+Log_To_Stdout = True # True or False
 Log_Max_Size = 5242880 # Bytes 
+Log_GZ_Count = 5 # Max GZ archived log files
 #Config_File = None
 Config_File = "./ya-dyndns.json"
 ExternalIP = None
@@ -45,26 +46,47 @@ ALL_PARAM_DICT['token'] = None # Yandex Pdd Token
 # https://connect.yandex.ru/portal/services/webmaster/resources/
 # https://yandex.ru/dev/connect/directory/api/about.html
 
+def LogToTar(PathToLog, gz_count):
+    if(os.path.exists(PathToLog)):
+        tar = tarfile.open(PathToLog+"."+str(gz_count + 1)+".gz", "w:gz")
+        tar.add(PathToLog)
+        tar.close()
+        # Delete current log file
+        os.remove(PathToLog)
 
 def LogRotate(PathToLog):
-    if (os.path.getsize(PathToLog) > Log_Max_Size):
-        if (os.path.exists(PathToLog)):
-            gz_count = 0
-            print(os.path.getsize(PathToLog))
-            print(os.path.dirname(PathToLog))
+    list_files = {}
+    gz_count = 0
+    if(os.path.exists(PathToLog)):
+        if (os.path.getsize(PathToLog) > Log_Max_Size):
+            # Archive current log file
+            LogToTar(os.path.realpath(PathToLog), gz_count)
             dir_name = (os.listdir(os.path.dirname(PathToLog)))
+            # Search all archived log files for delete old
             for file_name in dir_name:
                 if (file_name.find("gz",0,len(file_name))) > 0:
-                    print(file_name)
-                    curr_count = int(file_name.rpartition('log.')[2].partition('.gz')[0])
-                    if curr_count > gz_count:
-                        gz_count = curr_count
-                    # print(file_name.rpartition('.gz')[0])
-            tar = tarfile.open(PathToLog+"."+str(gz_count + 1)+".gz", "w:gz")
-            tar.add(PathToLog)
-            tar.close()
-            # Delete current log file
-            os.remove(PathToLog)
+                    try:
+                        list_files.update({file_name:datetime.datetime.fromtimestamp(os.path.getctime(file_name))})
+                        curr_count = int(file_name.rpartition('log.')[2].partition('.gz')[0])
+                        if curr_count > gz_count:
+                            gz_count = curr_count
+                        # print(file_name.rpartition('.gz')[0])
+                    except Exception as e:
+                        print("Error working whith log archives.\n" + str(e))
+
+        sorted_list_files = sorted(list_files.items(), key=lambda x:x[1])
+        sorted_list_files.reverse()
+        i_count = 0
+        for item in sorted_list_files:
+            i_count += 1
+            if(i_count >= Log_GZ_Count):
+                # Delete old archive logs
+                print("Delete old log file: " + os.path.realpath(item[0]))
+                os.remove(os.path.realpath(item[0]))
+
+# print(Log_Path)
+# LogRotate(Log_Path)
+# sys.exit(0)
 
 
 def WriteLog (Text, Log_MessType):
@@ -119,7 +141,7 @@ def ReadParametersFromConfig(PathToConfig):
 # Open input JSON Config file
 def OpenConfigFile(PathToLog):
     if (os.path.exists(str(PathToLog))):
-        WriteLog("Entered log file: " + str(PathToLog), MESSTYPE['inf'])
+        WriteLog("Entered config file: " + str(PathToLog), MESSTYPE['inf'])
         ReadParametersFromConfig(PathToLog)
     else:
         WriteLog("Error working whith log file: " + PathToLog)
