@@ -8,21 +8,20 @@ import datetime
 from requests.auth import AuthBase
 from collections import defaultdict
 import tarfile
-
+from pythonping import ping
 
 ################# Do not edis this variables #############
 EXTERNAL_CHECKIP_SITE = "http://api.ipify.org?format=json"
 ALL_PARAM_DICT = {'url_list':'','url_edit':'', 'token':'', 'domain':'', 'subdomain':'', 'subdomainid':'', 'ip':'', 'ttl':''}
-MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'INFO'})
+MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'INFO', 'dbg': 'DEBUG'})
 ##########################################################
 
 ################# Editable variables #####################
 Log_Path = "./dyn-test.log"
-Log_To_File = True # True or False
 Log_To_Stdout = True # True or False
 Log_Max_Size = 5242880 # Bytes 
 Log_GZ_Count = 5 # Max GZ archived log files
-#Config_File = None
+Log_Level = 2 # 0 - disable log, 1 - only error, 2 - error and warning, 3 - error, warning and info, 4 - all
 Config_File = "./ya-dyndns.json"
 ExternalIP = None
 ALL_PARAM_DICT['domain'] = None # FQDN main domain
@@ -45,6 +44,7 @@ ALL_PARAM_DICT['token'] = None # Yandex Pdd Token
 # ############### API Help links #########################
 # https://connect.yandex.ru/portal/services/webmaster/resources/
 # https://yandex.ru/dev/connect/directory/api/about.html
+
 
 def LogToTar(PathToLog, gz_count):
     if(os.path.exists(PathToLog)):
@@ -88,22 +88,36 @@ def LogRotate(PathToLog):
 # LogRotate(Log_Path)
 # sys.exit(0)
 
-
-def WriteLog (Text, Log_MessType):
-    line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
+def LogWriteToFile(textline):
     if (Log_To_Stdout):
-        print(line)
+        print(textline)
 
-    if ( Log_To_File ):
-        try:
-            file = open(Log_Path, "a")
-            file.write(line + "\n")
-            file.close()
-            LogRotate(Log_Path) # Log rotate 
-            return True
-        except Exception as e:
-            print("Error writing to log.\n" + str(e))
-            sys.exit(-1)
+    try:
+        file = open(Log_Path, "a")
+        file.write(textline + "\n")
+        file.close()
+        LogRotate(Log_Path) # Log rotate 
+        return True
+    except Exception as e:
+        print("Error writing to log.\n" + str(e))
+        sys.exit(-1)
+
+def LogWrite (Text, Log_MessType):
+    line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
+
+    if ( Log_Level > 0):
+        if ( Log_Level == 1 and Log_MessType == MESSTYPE['err']):
+            LogWriteToFile(line)
+        
+        if ( Log_Level == 2 and (Log_MessType == MESSTYPE['err'] or Log_MessType == MESSTYPE['warn'])):
+            LogWriteToFile(line)
+
+        if ( Log_Level == 3 and (Log_MessType == MESSTYPE['err'] or Log_MessType == MESSTYPE['warn'] or Log_MessType == MESSTYPE['inf'])):
+            LogWriteToFile(line)
+         
+        if ( Log_Level == 4 ):
+            LogWriteToFile(line)
+
 
 class TokenAuth(AuthBase):
     def __init__(self, token):
@@ -125,7 +139,7 @@ def ReadJsonConfig(Config):
 
 # Read parameters from config file
 def ReadParametersFromConfig(PathToConfig):
-    WriteLog("Load config: " + PathToConfig, MESSTYPE['inf'])
+    LogWrite("Load config: " + PathToConfig, MESSTYPE['inf'])
     if (os.path.exists(PathToConfig)):
         j = ReadJsonConfig(PathToConfig)
         ALL_PARAM_DICT['domain'] = j.get("YandexFqdnMainDomain") # FQDN main domain
@@ -136,15 +150,15 @@ def ReadParametersFromConfig(PathToConfig):
         ALL_PARAM_DICT['url_add'] = j.get("YandexPddAdressAdd") # Yandex Pdd Url for add record
         ALL_PARAM_DICT['token'] = j.get("YandexPddToken") # Yandex Pdd Token
     else:
-        WriteLog("Config not exists from path: " + PathToConfig, MESSTYPE['err'])
+        LogWrite("Config not exists from path: " + PathToConfig, MESSTYPE['err'])
 
 # Open input JSON Config file
 def OpenConfigFile(PathToLog):
     if (os.path.exists(str(PathToLog))):
-        WriteLog("Entered config file: " + str(PathToLog), MESSTYPE['inf'])
+        LogWrite("Entered config file: " + str(PathToLog), MESSTYPE['inf'])
         ReadParametersFromConfig(PathToLog)
     else:
-        WriteLog("Error working whith log file: " + PathToLog)
+        LogWrite("Error working whith log file: " + PathToLog, MESSTYPE['err'])
 
 # Check input parameters
 def CheckAllParams(PARAM_DICT):
@@ -158,13 +172,14 @@ def CheckAllParams(PARAM_DICT):
 def GetExternalIP(url):
      response = requests.get(url)
      if(response.status_code == 200):
-        #  print(response.content.decode("UTF-8"))
-         j = json.loads(response.content.decode("UTF-8"))
+         responseutf = (response.content.decode("UTF-8"))
+         LogWrite("Response content from check IP site: " + responseutf, MESSTYPE['dbg'])
+         j = json.loads(responseutf)
          ip_str = j.get("ip")
-         WriteLog("IP from external site: " + ip_str, MESSTYPE['inf'])
+         LogWrite("IP address from external site: " + ip_str, MESSTYPE['inf'])
          return(ip_str)
      else:
-        WriteLog("Error request from: "+ response.url, MESSTYPE['err'])
+        LogWrite("Error request from: " + response.url, MESSTYPE['err'])
         return None
 
 
@@ -215,11 +230,11 @@ def EditDNSRecord(PARAM_DICT, record_id, content):
     if (response.status_code == 200):
         j = json.loads(response.content.decode("UTF-8"))
         if (j.get("success") == "ok"):
-            WriteLog("Successfull edit DNS record: " + PARAM_DICT['subdomain'] + "\tIP: " + ExternalIP, MESSTYPE['inf'])
+            LogWrite("Successfull edit DNS record: " + PARAM_DICT['subdomain'] + "\tIP: " + ExternalIP, MESSTYPE['inf'])
             return j
     else:
-        WriteLog("Error edit DNS record: " + PARAM_DICT, MESSTYPE['err'])
-        WriteLog(response, MESSTYPE['err'])
+        LogWrite("Error edit DNS record: " + PARAM_DICT, MESSTYPE['err'])
+        LogWrite(response, MESSTYPE['err'])
         return response
         
 
@@ -241,15 +256,14 @@ def CreateDNSRecord(PARAM_DICT, record_type, content):
     if (response.status_code == 200):
         j = json.loads(response.content.decode("UTF-8"))
         if (j.get("success") == "ok"):
-            WriteLog("Successfully creating DNS record: " + PARAM_DICT['subdomain'] + ' whith IP: ' + content, MESSTYPE['inf'])
+            LogWrite("Successfully creating DNS record: " + PARAM_DICT['subdomain'] + ' whith IP address: ' + content, MESSTYPE['inf'])
             return j
     else:
-        WriteLog(response, MESSTYPE['err'])
+        LogWrite(response, MESSTYPE['err'])
         return response
 
 
-
-WriteLog("============== Init ==============", MESSTYPE['inf'])
+LogWrite("============== Init ==============", MESSTYPE['dbg'])
 
 if (len(sys.argv[1:]) > 0):
     Config_File = (sys.argv[1:])
@@ -259,7 +273,7 @@ else:
         OpenConfigFile(Config_File)
     else:
         if (CheckAllParams(ALL_PARAM_DICT) != True):
-                WriteLog("One or any input paramters not setted", MESSTYPE['err'])
+                LogWrite("One or any input parameters not setted: ", MESSTYPE['err'])
                 sys.exit(1)
 
 ExternalIP = GetExternalIP(EXTERNAL_CHECKIP_SITE)
@@ -277,11 +291,11 @@ if(SubDomainInfo['SubDomainID'] == None):
 else:
         # Compare IP
     if (SubDomainInfo['SubDomainIP'] == ExternalIP):
-        WriteLog("Compare External IP and SubDomain IP SUCCESSFULLY: " + ExternalIP, MESSTYPE['inf'])
+        LogWrite("Successfully compare of internal and external IP addresses: " + ExternalIP, MESSTYPE['inf'])
     else:
         # Set IP
         EditDNSRecord(ALL_PARAM_DICT, SubDomainInfo['SubDomainID'], ExternalIP)
 
-WriteLog("=============== End ===============", MESSTYPE['inf'])
+LogWrite("=============== End ===============", MESSTYPE['dbg'])
 
 
