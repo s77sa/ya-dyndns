@@ -8,115 +8,113 @@ import datetime
 from requests.auth import AuthBase
 from collections import defaultdict
 import tarfile
-from pythonping import ping
 
 ################# Do not edis this variables #############
-EXTERNAL_CHECKIP_SITE = "http://api.ipify.org?format=json"
-ALL_PARAM_DICT = {'url_list':'','url_edit':'', 'token':'', 'domain':'', 'subdomain':'', 'subdomainid':'', 'ip':'', 'ttl':''}
+EXTERNALCHECKIPSITE = "http://api.ipify.org?format=json"
+ALLPARAMDICT = {'url_list':'','url_edit':'', 'token':'', 'domain':'', 'subdomain':'', 'subdomainid':'', 'ip':'', 'ttl':''}
 MESSTYPE = defaultdict(lambda: 'NULL', {'err':'ERROR','warn':'WARRNING','inf':'INFO', 'dbg': 'DEBUG'})
 ##########################################################
 
 ################# Editable variables #####################
-Log_Path = "./dyn-test.log"
-Log_To_Stdout = True # True or False
-Log_Max_Size = 5242880 # Bytes 
-Log_GZ_Count = 5 # Max GZ archived log files
-Log_Level = 2 # 0 - disable log, 1 - only error, 2 - error and warning, 3 - error, warning and info, 4 - all
-Config_File = "./ya-dyndns.json"
-ExternalIP = None
-ALL_PARAM_DICT['domain'] = None # FQDN main domain
-ALL_PARAM_DICT['subdomain'] = None # FQDN sub domain
-ALL_PARAM_DICT['ttl'] = None # TTL for sub domain
-ALL_PARAM_DICT['url_list'] = None # Yandex Pdd Url for list
-ALL_PARAM_DICT['url_edit'] = None # Yandex Pdd Url for edit
-ALL_PARAM_DICT['url_add'] = None # Yandex Pdd Url for add record
-ALL_PARAM_DICT['token'] = None # Yandex Pdd Token
+logpath = "./dyn-test.log"
+logtostdout = True # True or False
+logmaxsize = 5242880 # Bytes 
+loggzcount = 5 # Max GZ archived log files
+loglevel = 4 # 0 - disable log, 1 - only error, 2 - error and warning, 3 - error, warning and info, 4 - all
+configfile = "./ya-dyndns.json"
+#ExternalIP = None
+ALLPARAMDICT['domain'] = None # FQDN main domain
+ALLPARAMDICT['subdomain'] = None # FQDN sub domain
+ALLPARAMDICT['ttl'] = None # TTL for sub domain
+ALLPARAMDICT['url_list'] = None # Yandex Pdd Url for list
+ALLPARAMDICT['url_edit'] = None # Yandex Pdd Url for edit
+ALLPARAMDICT['url_add'] = None # Yandex Pdd Url for add record
+ALLPARAMDICT['token'] = None # Yandex Pdd Token
 
-# ALL_PARAM_DICT['domain'] = "???????????" # FQDN main domain
-# ALL_PARAM_DICT['subdomain'] = "??????????" # FQDN sub domain
-# ALL_PARAM_DICT['ttl'] = 1800 # TTL for sub domain
-# ALL_PARAM_DICT['url_list'] = "https://pddimp.yandex.ru/api2/admin/dns/list" # Yandex Pdd Url for list
-# ALL_PARAM_DICT['url_edit'] = "https://pddimp.yandex.ru/api2/admin/dns/edit" # Yandex Pdd Url for edit
-# ALL_PARAM_DICT['url_add'] = "https://pddimp.yandex.ru/api2/admin/dns/add" # Yandex Pdd Url for add record
-# ALL_PARAM_DICT['token'] = "???????????????????????" # Yandex Pdd Token
+# ALLPARAMDICT['domain'] = "???????????" # FQDN main domain
+# ALLPARAMDICT['subdomain'] = "??????????" # FQDN sub domain
+# ALLPARAMDICT['ttl'] = 1800 # TTL for sub domain
+# ALLPARAMDICT['url_list'] = "https://pddimp.yandex.ru/api2/admin/dns/list" # Yandex Pdd Url for list
+# ALLPARAMDICT['url_edit'] = "https://pddimp.yandex.ru/api2/admin/dns/edit" # Yandex Pdd Url for edit
+# ALLPARAMDICT['url_add'] = "https://pddimp.yandex.ru/api2/admin/dns/add" # Yandex Pdd Url for add record
+# ALLPARAMDICT['token'] = "???????????????????????" # Yandex Pdd Token
 ##########################################################
 
 # ############### API Help links #########################
 # https://connect.yandex.ru/portal/services/webmaster/resources/
 # https://yandex.ru/dev/connect/directory/api/about.html
 
-
-def LogToTar(PathToLog, gz_count):
-    if(os.path.exists(PathToLog)):
-        tar = tarfile.open(PathToLog+"."+str(gz_count + 1)+".gz", "w:gz")
-        tar.add(PathToLog)
+def log_to_tar(pathtolog, gzcount):
+    if(os.path.exists(pathtolog)):
+        tar = tarfile.open(pathtolog+"."+str(gzcount + 1)+".gz", "w:gz")
+        tar.add(pathtolog)
         tar.close()
         # Delete current log file
-        os.remove(PathToLog)
+        os.remove(pathtolog)
 
-def LogRotate(PathToLog):
-    list_files = {}
-    gz_count = 0
-    if(os.path.exists(PathToLog)):
-        if (os.path.getsize(PathToLog) > Log_Max_Size):
+def log_rotate(pathtolog):
+    listfiles = {}
+    gzcount = 0
+    if(os.path.exists(pathtolog)):
+        if (os.path.getsize(pathtolog) > logmaxsize):
             # Archive current log file
-            LogToTar(os.path.realpath(PathToLog), gz_count)
-            dir_name = (os.listdir(os.path.dirname(PathToLog)))
+            log_to_tar(os.path.realpath(pathtolog), gzcount)
+            dir_name = (os.listdir(os.path.dirname(pathtolog)))
             # Search all archived log files for delete old
-            for file_name in dir_name:
-                if (file_name.find("gz",0,len(file_name))) > 0:
+            for filename in dir_name:
+                if (filename.find("gz",0,len(filename))) > 0:
                     try:
-                        list_files.update({file_name:datetime.datetime.fromtimestamp(os.path.getctime(file_name))})
-                        curr_count = int(file_name.rpartition('log.')[2].partition('.gz')[0])
-                        if curr_count > gz_count:
-                            gz_count = curr_count
+                        listfiles.update({filename:datetime.datetime.fromtimestamp(os.path.getctime(file_name))})
+                        curr_count = int(filename.rpartition('log.')[2].partition('.gz')[0])
+                        if curr_count > gzcount:
+                            gzcount = curr_count
                         # print(file_name.rpartition('.gz')[0])
                     except Exception as e:
                         print("Error working whith log archives.\n" + str(e))
 
-        sorted_list_files = sorted(list_files.items(), key=lambda x:x[1])
-        sorted_list_files.reverse()
+        sortedlistfiles = sorted(listfiles.items(), key=lambda x:x[1])
+        sortedlistfiles.reverse()
         i_count = 0
-        for item in sorted_list_files:
+        for item in sortedlistfiles:
             i_count += 1
-            if(i_count >= Log_GZ_Count):
+            if(i_count >= loggzcount):
                 # Delete old archive logs
                 print("Delete old log file: " + os.path.realpath(item[0]))
                 os.remove(os.path.realpath(item[0]))
 
-# print(Log_Path)
-# LogRotate(Log_Path)
+# print(logpath)
+# log_rotate(logpath)
 # sys.exit(0)
 
-def LogWriteToFile(textline):
-    if (Log_To_Stdout):
+def log_write_to_file(textline):
+    if (logtostdout):
         print(textline)
 
     try:
-        file = open(Log_Path, "a")
+        file = open(logpath, "a")
         file.write(textline + "\n")
         file.close()
-        LogRotate(Log_Path) # Log rotate 
+        log_rotate(logpath) # Log rotate 
         return True
     except Exception as e:
         print("Error writing to log.\n" + str(e))
         sys.exit(-1)
 
-def LogWrite (Text, Log_MessType):
+def log_write (Text, Log_MessType):
     line = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S") + "\t" + Log_MessType + "\t" + Text
 
-    if ( Log_Level > 0):
-        if ( Log_Level == 1 and Log_MessType == MESSTYPE['err']):
-            LogWriteToFile(line)
+    if ( loglevel > 0):
+        if ( loglevel == 1 and Log_MessType == MESSTYPE['err']):
+            log_write_to_file(line)
         
-        if ( Log_Level == 2 and (Log_MessType == MESSTYPE['err'] or Log_MessType == MESSTYPE['warn'])):
-            LogWriteToFile(line)
+        if ( loglevel == 2 and (Log_MessType == MESSTYPE['err'] or Log_MessType == MESSTYPE['warn'])):
+            log_write_to_file(line)
 
-        if ( Log_Level == 3 and (Log_MessType == MESSTYPE['err'] or Log_MessType == MESSTYPE['warn'] or Log_MessType == MESSTYPE['inf'])):
-            LogWriteToFile(line)
+        if ( loglevel == 3 and (Log_MessType == MESSTYPE['err'] or Log_MessType == MESSTYPE['warn'] or Log_MessType == MESSTYPE['inf'])):
+            log_write_to_file(line)
          
-        if ( Log_Level == 4 ):
-            LogWriteToFile(line)
+        if ( loglevel == 4 ):
+            log_write_to_file(line)
 
 
 class TokenAuth(AuthBase):
@@ -126,8 +124,8 @@ class TokenAuth(AuthBase):
     def __call__(self, r):
         r.headers["PddToken"] = f"{self.token}" 
         return r
-# Read JSON needded for ReadParametersFromConfig() 
-def ReadJsonConfig(Config):
+# Read JSON needded for read_parameters_from_config() 
+def read_json_config(Config):
     if (os.path.exists(Config)):
         file = open(Config, "r")
         j = json.load(file)
@@ -138,55 +136,62 @@ def ReadJsonConfig(Config):
         return None
 
 # Read parameters from config file
-def ReadParametersFromConfig(PathToConfig):
-    LogWrite("Load config: " + PathToConfig, MESSTYPE['inf'])
-    if (os.path.exists(PathToConfig)):
-        j = ReadJsonConfig(PathToConfig)
-        ALL_PARAM_DICT['domain'] = j.get("YandexFqdnMainDomain") # FQDN main domain
-        ALL_PARAM_DICT['subdomain'] = j.get("YandexFqdnSubDomain") # FQDN sub domain
-        ALL_PARAM_DICT['ttl'] = j.get("SubDomainTtl") # TTL for sub domain
-        ALL_PARAM_DICT['url_list'] = j.get("YandexPddAdressList") # Yandex Pdd Url for list
-        ALL_PARAM_DICT['url_edit'] = j.get("YandexPddAdressEdit") # Yandex Pdd Url for edit
-        ALL_PARAM_DICT['url_add'] = j.get("YandexPddAdressAdd") # Yandex Pdd Url for add record
-        ALL_PARAM_DICT['token'] = j.get("YandexPddToken") # Yandex Pdd Token
+def read_parameters_from_config(pathtoconfig):
+    log_write("Load config: " + pathtoconfig, MESSTYPE['inf'])
+    if (os.path.exists(pathtoconfig)):
+        j = read_json_config(pathtoconfig)
+        ALLPARAMDICT['domain'] = j.get("YandexFqdnMainDomain") # FQDN main domain
+        ALLPARAMDICT['subdomain'] = j.get("YandexFqdnSubDomain") # FQDN sub domain
+        ALLPARAMDICT['ttl'] = j.get("SubDomainTtl") # TTL for sub domain
+        ALLPARAMDICT['url_list'] = j.get("YandexPddAdressList") # Yandex Pdd Url for list
+        ALLPARAMDICT['url_edit'] = j.get("YandexPddAdressEdit") # Yandex Pdd Url for edit
+        ALLPARAMDICT['url_add'] = j.get("YandexPddAdressAdd") # Yandex Pdd Url for add record
+        ALLPARAMDICT['token'] = j.get("YandexPddToken") # Yandex Pdd Token
     else:
-        LogWrite("Config not exists from path: " + PathToConfig, MESSTYPE['err'])
+        log_write("Config not exists from path: " + pathtoconfig, MESSTYPE['err'])
 
 # Open input JSON Config file
-def OpenConfigFile(PathToLog):
-    if (os.path.exists(str(PathToLog))):
-        LogWrite("Entered config file: " + str(PathToLog), MESSTYPE['inf'])
-        ReadParametersFromConfig(PathToLog)
+def open_config_file(pathtolog):
+    if (os.path.exists(str(pathtolog))):
+        log_write("Entered config file: " + str(pathtolog), MESSTYPE['inf'])
+        read_parameters_from_config(pathtolog)
     else:
-        LogWrite("Error working whith log file: " + PathToLog, MESSTYPE['err'])
+        log_write("Error working whith log file: " + pathtolog, MESSTYPE['err'])
 
 # Check input parameters
-def CheckAllParams(PARAM_DICT):
+def check_all_params(paramdict):
     status = True
-    for param in PARAM_DICT:
-        if(PARAM_DICT[param] == None or PARAM_DICT[param] == ''):
+    for param in paramdict:
+        if(paramdict[param] == None or paramdict[param] == ''):
             status = False
     return status
 
 # Get IP from external WEB site
-def GetExternalIP(url):
-     response = requests.get(url)
-     if(response.status_code == 200):
-         responseutf = (response.content.decode("UTF-8"))
-         LogWrite("Response content from check IP site: " + responseutf, MESSTYPE['dbg'])
-         j = json.loads(responseutf)
-         ip_str = j.get("ip")
-         LogWrite("IP address from external site: " + ip_str, MESSTYPE['inf'])
-         return(ip_str)
-     else:
-        LogWrite("Error request from: " + response.url, MESSTYPE['err'])
-        return None
+def get_external_ip(url):
+    response = None
+    ipstr = None
+    try:
+        response = requests.get(url)
+    except (requests.ConnectionError) as connectexcept:
+        log_write("Error request from site: " + url + ", or no internet connection.", MESSTYPE['err'])
+        
+    if (response != None):
+        if(response.status_code == 200):
+            responseutf = (response.content.decode("UTF-8"))
+            log_write("Response content from check IP site: " + responseutf, MESSTYPE['dbg'])
+            j = json.loads(responseutf)
+            ipstr = j.get("ip")
+            log_write("IP address from external site: " + ipstr, MESSTYPE['inf'])
+            return(ipstr)
+        else:
+            log_write("Error request from: " + response.url, MESSTYPE['err'])
+    return ipstr
 
 
 # Get All information from Yandex DNS Information
-def GetYandexDnsList(url_list, domain, token):
+def get_yandex_dns_list(urllist, domain, token):
     response = requests.get(
-        url_list,
+        urllist,
         auth=TokenAuth(token),
         params={"domain": domain}
     )
@@ -198,7 +203,7 @@ def GetYandexDnsList(url_list, domain, token):
         return None     
 
 # Get IP adn ID from all contents
-def GetIPSubDomain(jsoncontent, subdomain):
+def get_ip_sub_domain(jsoncontent, subdomain):
     subip = None
     subid = None
     # print(jsoncontent)
@@ -215,87 +220,87 @@ def GetIPSubDomain(jsoncontent, subdomain):
         return None
 
 
-def EditDNSRecord(PARAM_DICT, record_id, content):
+def edit_dns_record(paramdict, recordid, content):
     status = 0
     response = requests.post(
-        PARAM_DICT['url_edit'],
-        auth=TokenAuth(PARAM_DICT['token']),
+        paramdict['url_edit'],
+        auth=TokenAuth(paramdict['token']),
         params={
-            "domain": PARAM_DICT['domain'],
-            "record_id": record_id,
+            "domain": paramdict['domain'],
+            "record_id": recordid,
             #"subdomain":subdomain,
             "content":content,
-            "ttl":PARAM_DICT['ttl']}
+            "ttl":paramdict['ttl']}
     )
     if (response.status_code == 200):
         j = json.loads(response.content.decode("UTF-8"))
         if (j.get("success") == "ok"):
-            LogWrite("Successfull edit DNS record: " + PARAM_DICT['subdomain'] + "\tIP: " + ExternalIP, MESSTYPE['inf'])
+            log_write("Successfull edit DNS record: " + paramdict['subdomain'] + "\tIP: " + ExternalIP, MESSTYPE['inf'])
             return j
     else:
-        LogWrite("Error edit DNS record: " + PARAM_DICT, MESSTYPE['err'])
-        LogWrite(response, MESSTYPE['err'])
+        log_write("Error edit DNS record: " + paramdict, MESSTYPE['err'])
+        log_write(response, MESSTYPE['err'])
         return response
         
 
 
-def CreateDNSRecord(PARAM_DICT, record_type, content):
+def create_dns_record(paramdict, record_type, content):
     status = 0
-    # print(PARAM_DICT['subdomain'].partition('.')[0])
-    # print(CheckAllParams(PARAM_DICT))
+    # print(paramdict['subdomain'].partition('.')[0])
+    # print(check_all_params(paramdict))
     response = requests.post(
-        PARAM_DICT['url_add'],
-        auth=TokenAuth(PARAM_DICT['token']),
+        paramdict['url_add'],
+        auth=TokenAuth(paramdict['token']),
         params={
-            "domain": PARAM_DICT['domain'],
+            "domain": paramdict['domain'],
             "type": record_type,
-            "subdomain":PARAM_DICT['subdomain'].partition('.')[0],
+            "subdomain":paramdict['subdomain'].partition('.')[0],
             "content":content,
-            "ttl":PARAM_DICT['ttl']}
+            "ttl":paramdict['ttl']}
     )
     if (response.status_code == 200):
         j = json.loads(response.content.decode("UTF-8"))
         if (j.get("success") == "ok"):
-            LogWrite("Successfully creating DNS record: " + PARAM_DICT['subdomain'] + ' whith IP address: ' + content, MESSTYPE['inf'])
+            log_write("Successfully creating DNS record: " + paramdict['subdomain'] + ' whith IP address: ' + content, MESSTYPE['inf'])
             return j
     else:
-        LogWrite(response, MESSTYPE['err'])
+        log_write(response, MESSTYPE['err'])
         return response
 
 
-LogWrite("============== Init ==============", MESSTYPE['dbg'])
+log_write("============== Init ==============", MESSTYPE['dbg'])
 
 if (len(sys.argv[1:]) > 0):
-    Config_File = (sys.argv[1:])
-    OpenConfigFile(Config_File)
+    configfile = (sys.argv[1:])
+    open_config_file(configfile)
 else:
-    if(Config_File != None):
-        OpenConfigFile(Config_File)
+    if(configfile != None):
+        open_config_file(configfile)
     else:
-        if (CheckAllParams(ALL_PARAM_DICT) != True):
-                LogWrite("One or any input parameters not setted: ", MESSTYPE['err'])
+        if (check_all_params(ALLPARAMDICT) != True):
+                log_write("One or any input parameters not setted: ", MESSTYPE['err'])
                 sys.exit(1)
 
-ExternalIP = GetExternalIP(EXTERNAL_CHECKIP_SITE)
+ExternalIP = get_external_ip(EXTERNALCHECKIPSITE)
+if (ExternalIP != None):
+    ExternalContent = (get_yandex_dns_list(ALLPARAMDICT['url_list'], ALLPARAMDICT['domain'], ALLPARAMDICT['token']))
 
-ExternalContent = (GetYandexDnsList(ALL_PARAM_DICT['url_list'], ALL_PARAM_DICT['domain'], ALL_PARAM_DICT['token']))
-
-SubDomainInfo = (GetIPSubDomain(ExternalContent, ALL_PARAM_DICT['subdomain']))
-if(SubDomainInfo['SubDomainID'] == None):
-    # print(ALL_PARAM_DICT)
-    # Create Sub Domain
-    CreateDNSRecord(ALL_PARAM_DICT, 'A', ExternalIP)
-    # print("if create")
-    # print(SubDomainInfo['SubDomainID'])
-    # print(SubDomainInfo['SubDomainID'])
-else:
-        # Compare IP
-    if (SubDomainInfo['SubDomainIP'] == ExternalIP):
-        LogWrite("Successfully compare of internal and external IP addresses: " + ExternalIP, MESSTYPE['inf'])
+    SubDomainInfo = (get_ip_sub_domain(ExternalContent, ALLPARAMDICT['subdomain']))
+    if(SubDomainInfo['SubDomainID'] == None):
+        # print(ALLPARAMDICT)
+        # Create Sub Domain
+        create_dns_record(ALLPARAMDICT, 'A', ExternalIP)
+        # print("if create")
+        # print(SubDomainInfo['SubDomainID'])
+        # print(SubDomainInfo['SubDomainID'])
     else:
-        # Set IP
-        EditDNSRecord(ALL_PARAM_DICT, SubDomainInfo['SubDomainID'], ExternalIP)
+            # Compare IP
+        if (SubDomainInfo['SubDomainIP'] == ExternalIP):
+            log_write("Successfully compare of internal and external IP addresses: " + ExternalIP, MESSTYPE['inf'])
+        else:
+            # Set IP
+            edit_dns_record(ALLPARAMDICT, SubDomainInfo['SubDomainID'], ExternalIP)
 
-LogWrite("=============== End ===============", MESSTYPE['dbg'])
+log_write("=============== End ===============", MESSTYPE['dbg'])
 
 
