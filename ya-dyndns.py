@@ -63,7 +63,7 @@ def log_rotate(pathtolog):
             for filename in dir_name:
                 if (filename.find("gz",0,len(filename))) > 0:
                     try:
-                        listfiles.update({filename:datetime.datetime.fromtimestamp(os.path.getctime(file_name))})
+                        listfiles.update({filename:datetime.datetime.fromtimestamp(os.path.getctime(filename))})
                         curr_count = int(filename.rpartition('log.')[2].partition('.gz')[0])
                         if curr_count > gzcount:
                             gzcount = curr_count
