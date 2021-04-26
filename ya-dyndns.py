@@ -22,7 +22,6 @@ logmaxsize = 5242880 # Bytes
 loggzcount = 5 # Max GZ archived log files
 loglevel = 4 # 0 - disable log, 1 - only error, 2 - error and warning, 3 - error, warning and info, 4 - all
 configfile = "./ya-dyndns.json"
-#ExternalIP = None
 ALLPARAMDICT['domain'] = None # FQDN main domain
 ALLPARAMDICT['subdomain'] = None # FQDN sub domain
 ALLPARAMDICT['ttl'] = None # TTL for sub domain
@@ -190,13 +189,17 @@ def get_external_ip(url):
 
 # Get All information from Yandex DNS Information
 def get_yandex_dns_list(urllist, domain, token):
+    log_write("Input params. urllist=" + urllist + " domain=" + domain + " token=" + token, MESSTYPE['dbg'])
     response = requests.get(
         urllist,
         auth=TokenAuth(token),
         params={"domain": domain}
     )
-    if (response.status_code == 200):
+    status = response.status_code
+    log_write("Response from: " + urllist + " status: " + str(status), MESSTYPE['dbg'])
+    if ( status == 200):
         j = json.loads(response.content.decode("UTF-8"))
+        log_write("Json response:\n" + str(j), MESSTYPE['dbg'])
         if (j.get("success") == "ok"):
             return j
     else:
@@ -235,7 +238,7 @@ def edit_dns_record(paramdict, recordid, content):
     if (response.status_code == 200):
         j = json.loads(response.content.decode("UTF-8"))
         if (j.get("success") == "ok"):
-            log_write("Successfull edit DNS record: " + paramdict['subdomain'] + "\tIP: " + ExternalIP, MESSTYPE['inf'])
+            log_write("Successfull edit DNS record: " + paramdict['subdomain'] + "\tIP: " + externalip, MESSTYPE['inf'])
             return j
     else:
         log_write("Error edit DNS record: " + paramdict, MESSTYPE['err'])
@@ -281,25 +284,26 @@ else:
                 log_write("One or any input parameters not setted: ", MESSTYPE['err'])
                 sys.exit(1)
 
-ExternalIP = get_external_ip(EXTERNALCHECKIPSITE)
-if (ExternalIP != None):
-    ExternalContent = (get_yandex_dns_list(ALLPARAMDICT['url_list'], ALLPARAMDICT['domain'], ALLPARAMDICT['token']))
-
-    SubDomainInfo = (get_ip_sub_domain(ExternalContent, ALLPARAMDICT['subdomain']))
-    if(SubDomainInfo['SubDomainID'] == None):
+externalip = get_external_ip(EXTERNALCHECKIPSITE)
+if (externalip != None):
+    externalcontent = (get_yandex_dns_list(ALLPARAMDICT['url_list'], ALLPARAMDICT['domain'], ALLPARAMDICT['token']))
+    
+    subdomaininfo = (get_ip_sub_domain(externalcontent, ALLPARAMDICT['subdomain']))
+    if(subdomaininfo['subdomainid'] == None):
         # print(ALLPARAMDICT)
         # Create Sub Domain
-        create_dns_record(ALLPARAMDICT, 'A', ExternalIP)
+        create_dns_record(ALLPARAMDICT, 'A', externalip)
         # print("if create")
-        # print(SubDomainInfo['SubDomainID'])
-        # print(SubDomainInfo['SubDomainID'])
+        # print(subdomaininfo['SubDomainID'])
+        # print(subdomaininfo['SubDomainID'])
     else:
             # Compare IP
-        if (SubDomainInfo['SubDomainIP'] == ExternalIP):
-            log_write("Successfully compare of internal and external IP addresses: " + ExternalIP, MESSTYPE['inf'])
+        if (subdomaininfo['SubDomainIP'] == externalip):
+            log_write("Successfully compare of internal and external IP addresses: " + externalip, MESSTYPE['inf'])
         else:
             # Set IP
-            edit_dns_record(ALLPARAMDICT, SubDomainInfo['SubDomainID'], ExternalIP)
+            edit_dns_record(ALLPARAMDICT, subdomaininfo['subdomainid'], externalip)
+    
 
 log_write("=============== End ===============", MESSTYPE['dbg'])
 
