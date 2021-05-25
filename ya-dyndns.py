@@ -218,7 +218,7 @@ def get_ip_sub_domain(jsoncontent, subdomain):
                 subip = line.get("content")
                 subid = line.get("record_id")
                 # print(subip, subid)
-        return {"SubDomainIP":subip, "SubDomainID":subid}
+        return {"subdomainip":subip, "subdomainid":subid}
     else:
         return None
 
@@ -290,15 +290,10 @@ if (externalip != None):
     
     subdomaininfo = (get_ip_sub_domain(externalcontent, ALLPARAMDICT['subdomain']))
     if(subdomaininfo['subdomainid'] == None):
-        # print(ALLPARAMDICT)
-        # Create Sub Domain
         create_dns_record(ALLPARAMDICT, 'A', externalip)
-        # print("if create")
-        # print(subdomaininfo['SubDomainID'])
-        # print(subdomaininfo['SubDomainID'])
     else:
             # Compare IP
-        if (subdomaininfo['SubDomainIP'] == externalip):
+        if (subdomaininfo['subdomainip'] == externalip):
             log_write("Successfully compare of internal and external IP addresses: " + externalip, MESSTYPE['inf'])
         else:
             # Set IP
